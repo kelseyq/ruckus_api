@@ -29,10 +29,30 @@ implicit val formats = DefaultFormats
   
   case class Reaction(user_id: String, reaction_type: String, content: String)
 
-  get("/mlb/:date/:team/gameinfo") {
+  case class RuckusInning(number: Int, isTop: Boolean)  {
+    override def toString(): String = { number + (if (isTop) "t" else "b") }
+  }
+
+  def getCurrentInning(game: Game): RuckusInning = {
+    RuckusInning(game.innings.all.length, !(game.innings.all.last.bottom.isDefined)) 
+  }
+
+  get("/mlb/:date/:team/gameinfo/") {
     val date = new SimpleDateFormat("yyy-MM-dd").parse(params("date"))
     val game = new Game(date, params("team"))
-    game.homeTeamNameFull
+    val inning = getCurrentInning(game)
+    val home = game.homeTeamAbbrev
+    val away = game.awayTeamAbbrev
+    val atBat = game.innings.all.last.atBats.last
+
+    val json =
+            ("score" -> (away + " " + game.boxScore.lineScore.awayTeamRuns + " - " + home + " " + game.boxScore.lineScore.homeTeamRuns)) ~
+            ("current_inning" -> inning.toString) ~
+            ("current_batter" -> (game.atBat.map(_.nameDisplayFirstLast).getOrElse("") + " (" + (if (inning.isTop) away else home) + ")")) ~
+            ("current_pitcher" -> (atBat.pitcher.nameDisplayFirstLast + " (" + (if (inning.isTop) home else away) + ")")) ~ //not super accurate if pitcher recently changed
+            ("last_play" -> atBat.des) 
+
+    pretty(render(json))
   }
 
   post("/mlb/:date/:team/reaction/") {
