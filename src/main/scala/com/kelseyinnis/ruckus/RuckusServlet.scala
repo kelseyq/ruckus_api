@@ -44,6 +44,15 @@ RegisterJodaTimeConversionHelpers()
     RuckusInning(game.innings.all.length, !(game.innings.all.last.bottom.isDefined)) 
   }
 
+  def getSuffix(inning: RuckusInning) = {
+    inning.number match {
+      case 1 => "1ST"
+      case 2 => "2ND"
+      case 3 => "3RD"
+      case n => n + "TH"
+    }
+  }
+
   get("/mlb/:date/:team/gameinfo/") {
     val date = new SimpleDateFormat("yyy-MM-dd").parse(params("date"))
     val game = new Game(date, params("team"))
@@ -54,11 +63,10 @@ RegisterJodaTimeConversionHelpers()
 
     val json =
             ("score" -> (away + " " + game.boxScore.lineScore.awayTeamRuns + " - " + home + " " + game.boxScore.lineScore.homeTeamRuns)) ~
-            ("current_inning" -> inning.toString) ~
+            ("current_inning" -> ((if (inning.isTop) "TOP" else "BOTTOM") + " OF THE " + getSuffix(inning))) ~
             ("current_batter" -> (game.atBat.map(_.nameDisplayFirstLast).getOrElse("") + " (" + (if (inning.isTop) away else home) + ")")) ~
             ("current_pitcher" -> (atBat.pitcher.nameDisplayFirstLast + " (" + (if (inning.isTop) home else away) + ")")) ~ //not super accurate if pitcher recently changed
-            ("last_play" -> atBat.des) 
-
+            ("last_play" -> atBat.des.trim) 
     pretty(render(json))
   }
 
