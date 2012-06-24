@@ -213,8 +213,16 @@ def gameFilter() = MongoDBObject("team" -> params("team"), "game_date" -> params
       val filter = gameFilter ++ inningFilter
       val numParam = params.get("number").getOrElse("1").toInt
       println(numParam)
-      val json = mongoColl.find(filter).sort(MongoDBObject("upvotes" -> -1)).limit(params.get("number").getOrElse("1").toInt).toList.zipWithIndex.map{case (v,i) =>("reaction" + (i+1) -> getReactionJson(v))}
+      val topReactions = mongoColl.find(filter).sort(MongoDBObject("upvotes" -> -1)).limit(3).toList
+      if (topReactions.length >2) {
+        val json =
+            ("reaction1" -> getReactionJson(topReactions(0))) ~
+            ("reaction2" -> getReactionJson(topReactions(1))) ~
+            ("reaction3" -> getReactionJson(topReactions(2)))
       pretty(render(json))
+      } else {
+        Ok()
+      }
   }
 }
 
