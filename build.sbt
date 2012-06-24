@@ -19,8 +19,7 @@ libraryDependencies ++= Seq(
   "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC5" % "container",
    "org.eclipse.jetty" % "jetty-webapp" % "8.1.0.RC5" % "compile",
    "net.liftweb" %% "lift-json" % "2.4-M4",
-	"com.mongodb.casbah" % "casbah_2.9.0-1" % "2.1.5.0",
-  "net.databinder" %% "dispatch-http" % "0.8.8"
+	"com.mongodb.casbah" % "casbah_2.9.0-1" % "2.1.5.0"
    )
 
 resolvers += "Sonatype OSS Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"

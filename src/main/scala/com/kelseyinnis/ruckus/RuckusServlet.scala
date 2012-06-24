@@ -10,6 +10,9 @@ import com.mongodb.casbah.MongoURI
 import scala.util.Properties
 import com.xenopsconsulting.gamedayapi._
 import java.text.SimpleDateFormat
+import org.scala_tools.time.Imports._
+import com.mongodb.casbah.commons.conversions.scala._
+
 
 class RuckusServlet extends ScalatraServlet  {
 
@@ -18,6 +21,8 @@ val MongoSetting(db) = Properties.envOrNone("MONGOHQ_URL")
 val mongoColl: MongoCollection = db(collName)
 
 implicit val formats = DefaultFormats
+
+RegisterJodaTimeConversionHelpers()
 
   get("/") {
     <html>
@@ -63,7 +68,7 @@ implicit val formats = DefaultFormats
         builder += "user_id" -> theReaction.user_id
         builder += "game_date" -> params("date")
         builder += "team" -> params("team")
-        builder += "inning" -> "0t"
+        builder += "inning" -> getCurrentInning(new Game(new SimpleDateFormat("yyy-MM-dd").parse(params("date")), params("team"))).toString
         builder += "reaction_type" -> theReaction.reaction_type
         builder += "content" -> theReaction.content
         builder += "upvotes" -> 0
@@ -72,6 +77,7 @@ implicit val formats = DefaultFormats
         builder += "downvoters" -> MongoDBList.newBuilder.result
         builder += "flags" -> 0
         builder += "flaggers" -> MongoDBList.newBuilder.result
+        builder += "created_on" -> new DateTime()
         val newReaction = builder.result
         mongoColl += newReaction
       }
@@ -111,24 +117,28 @@ implicit val formats = DefaultFormats
                 ("content" -> (dbObj.getAs[String]("content") getOrElse("00000")))) 
   }
 
-  private def getReactions(reacting_user: String, date: String, team: String): List[MongoDBObject] = {
+  private def getReactions(reacting_user: String, date: String, team: String): List[DBObject] = {
       //hideously inefficient--puttin the "hack" in "hackathon"
       //TODO: filter out flagged reactions & reactions with too many downvotes
       //      bubble up higher voted reactions? 
 
-      val filter = ("user_id" $ne 0) //("user_id" $ne reacting_user)
-      //TODO: filter by game, only take last 10 minutes, always return 3 different
+      val userFilter = ("user_id" $ne 0) //("user_id" $ne reacting_user)
+      val timeFilter = ("created_on" $gt (new DateTime() - 5.days)) //5.minutes
 
-      val otherReactions = mongoColl.find(filter)
-      val totalReactions = otherReactions.count.toInt
+      val filter = userFilter ++ gameFilter ++ timeFilter 
+
+      val otherReactions = mongoColl.find(filter).toList
+      val totalReactions = otherReactions.length
+
       if (totalReactions > 2) {
-        val random1 = scala.util.Random.nextInt(totalReactions)
-        val random2 = scala.util.Random.nextInt(totalReactions)
-        val random3 = scala.util.Random.nextInt(totalReactions)
+        val r = new scala.util.Random
+        val random1 = r.nextInt(totalReactions)
+        val random2 = r.nextInt(totalReactions)
+        val random3 = r.nextInt(totalReactions)
 
-        val reaction1 = mongoColl.find(filter).limit(-1).skip(random1).next()
-        val reaction2 = mongoColl.find(filter).limit(-1).skip(random2).next()
-         val reaction3 = mongoColl.find(filter).limit(-1).skip(random3).next()
+        val reaction1 = otherReactions(random1)
+        val reaction2 = otherReactions(random2)
+        val reaction3 = otherReactions(random3)
         List(reaction1, reaction2, reaction3)
       } else {
         List()
@@ -190,9 +200,11 @@ def gameFilter() = MongoDBObject("team" -> params("team"), "game_date" -> params
   }
 
   get("/mlb/:date/:team/top") {
-    Ok()
+    //todo: make this work
+      val inningFilter = MongoDBObject("inning" -> params.getOrElse("inning", halt(400)))
+      val filter = gameFilter ++ inningFilter
+      mongoColl.find(filter).sort(MongoDBObject("upvotes" -> -1)).limit(params.get("number").getOrElse("1").toInt).toList.map(getReactionJson(_))
   }
-
 }
 
 object MongoSetting {
