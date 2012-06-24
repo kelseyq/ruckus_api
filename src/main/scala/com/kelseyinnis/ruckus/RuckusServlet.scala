@@ -19,7 +19,6 @@ val mongoColl: MongoCollection = db(collName)
 
 implicit val formats = DefaultFormats
 
-
   get("/") {
     <html>
       <body>
@@ -150,8 +149,24 @@ implicit val formats = DefaultFormats
     Ok()
   }
 
+def gameFilter() = MongoDBObject("team" -> params("team"), "game_date" -> params("date"))
+
   get("/mlb/:date/:team/reactions/") {
-    Ok()
+      def getFullReactionJson(dbObj: MongoDBObject) = {
+                (("url" -> ("/mlb/" + params("date") + "/" + params("team") + "/reaction/" + (dbObj.getAs[String]("_id") getOrElse("00000")))) ~ 
+                ("reaction_id" -> (dbObj.getAs[ObjectId]("_id").map(_.toString) getOrElse("00000"))) ~ 
+                ("reaction_type" -> (dbObj.getAs[String]("reaction_type") getOrElse("string"))) ~
+                ("user_id" -> (dbObj.getAs[String]("user_id") getOrElse("no id"))) ~
+                ("date" -> (dbObj.getAs[String]("game_date") getOrElse("no date"))) ~
+                ("team" -> (dbObj.getAs[String]("team") getOrElse("no team"))) ~
+                ("votes" -> (dbObj.getAs[Int]("upvotes") getOrElse(0))) ~
+                ("content" -> (dbObj.getAs[String]("content") getOrElse("00000")))) 
+      }
+
+
+    val reactions = mongoColl.find(gameFilter).toList.map(getFullReactionJson(_))
+
+    pretty(render(reactions))
   }
 
   get("/mlb/:date/:team/top") {
