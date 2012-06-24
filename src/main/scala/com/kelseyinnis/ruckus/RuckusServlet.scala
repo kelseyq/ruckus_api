@@ -27,7 +27,7 @@ RegisterJodaTimeConversionHelpers()
   get("/") {
     <html>
       <body>
-        <h1>Hello, world!</h1>
+        <h1>RUCKUS</h1>
       </body>
     </html>
   }
@@ -191,6 +191,7 @@ def gameFilter() = MongoDBObject("team" -> params("team"), "game_date" -> params
                 ("user_id" -> (dbObj.getAs[String]("user_id") getOrElse("no id"))) ~
                 ("date" -> (dbObj.getAs[String]("game_date") getOrElse("no date"))) ~
                 ("team" -> (dbObj.getAs[String]("team") getOrElse("no team"))) ~
+                ("inning" -> (dbObj.getAs[String]("inning") getOrElse("no inning"))) ~
                 ("votes" -> (dbObj.getAs[Int]("upvotes") getOrElse(0))) ~
                 ("content" -> (dbObj.getAs[String]("content") getOrElse("00000")))) 
       }
