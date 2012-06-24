@@ -203,7 +203,7 @@ def gameFilter() = MongoDBObject("team" -> params("team"), "game_date" -> params
     //todo: make this work
       val inningFilter = MongoDBObject("inning" -> params.getOrElse("inning", halt(400)))
       val filter = gameFilter ++ inningFilter
-      mongoColl.find(filter).sort(MongoDBObject("upvotes" -> -1)).limit(params.get("number").getOrElse("1").toInt).toList.map(getReactionJson(_))
+      pretty(render(mongoColl.find(filter).sort(MongoDBObject("upvotes" -> -1)).limit(params.get("number").getOrElse("1").toInt).toList.map(getReactionJson(_))))
   }
 }
 
