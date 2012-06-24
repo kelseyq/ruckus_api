@@ -75,7 +75,7 @@ implicit val formats = DefaultFormats
           val json =
             ("reaction1" -> getReactionJson(otherReactions(0))) ~
             ("reaction2" -> getReactionJson(otherReactions(1))) ~
-            ("reaction2" -> getReactionJson(otherReactions(2)))
+            ("reaction3" -> getReactionJson(otherReactions(2)))
           pretty(render(json))
       } else Ok()
   }
