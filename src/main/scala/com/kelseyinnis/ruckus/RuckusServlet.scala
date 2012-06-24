@@ -8,6 +8,8 @@ import net.liftweb.json.Serialization.{read, write}
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoURI
 import scala.util.Properties
+import com.xenopsconsulting.gamedayapi._
+import java.text.SimpleDateFormat
 
 class RuckusServlet extends ScalatraServlet  {
 
@@ -29,8 +31,9 @@ implicit val formats = DefaultFormats
   case class Reaction(user_id: String, reaction_type: String, content: String)
 
   get("/mlb/:date/:team/gameinfo") {
-    //todo: implement
-      Ok()
+    val date = new SimpleDateFormat("yyy-MM-dd").parse(params("date"))
+    val game = new Game(date, params("team"))
+    game.homeTeamNameFull
   }
 
   post("/mlb/:date/:team/reaction/") {
@@ -95,7 +98,7 @@ implicit val formats = DefaultFormats
       //      bubble up higher voted reactions? 
 
       val filter = ("user_id" $ne 0) //("user_id" $ne reacting_user)
-      //TODO: filter by game
+      //TODO: filter by game, only take last 10 minutes, always return 3 different
 
       val otherReactions = mongoColl.find(filter)
       val totalReactions = otherReactions.count.toInt
@@ -129,7 +132,7 @@ implicit val formats = DefaultFormats
   post("/mlb/:date/:team/:reaction_id/upvote") {
     val oid : DBObject = MongoDBObject("_id" -> new ObjectId(params("reaction_id")))
     mongoColl.update(oid, $push("upvoters" -> params.getOrElse("user_id", halt(400))))
-    mongoColl.update(oid, $inc("upvotes" -> params.getOrElse("intensity","1").toInt))
+    mongoColl.update(oid, $inc("upvotes" -> params.getOrElse("intensity", "1").toInt))
     Ok()
   }
   

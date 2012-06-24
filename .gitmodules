@@ -1,0 +1,9 @@
+[submodule "lib/gameday-orig"]
+	path = lib/gameday-orig
+	url = git://github.com/ecopony/scala-gameday-api
+[submodule "lib/dispatch"]
+	path = lib/dispatch
+	url = git://github.com/dispatch/dispatch/
+[submodule "lib/gameday-fork"]
+	path = lib/gameday-fork
+	url = git://github.com/kelseyq/scala-gameday-api
