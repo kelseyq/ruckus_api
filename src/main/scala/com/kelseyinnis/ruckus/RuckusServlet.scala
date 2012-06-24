@@ -132,7 +132,7 @@ RegisterJodaTimeConversionHelpers()
       //TODO: filter out flagged reactions & reactions with too many downvotes
       //      bubble up higher voted reactions? 
 
-      val userFilter = ("user_id" $ne 0) //("user_id" $ne reacting_user)
+      val userFilter = ("user_id" $ne "demo") //("user_id" $ne reacting_user)
       val timeFilter = ("created_on" $gt (new DateTime() - 5.days)) //5.minutes
 
       val filter = userFilter ++ gameFilter ++ timeFilter 
@@ -143,8 +143,14 @@ RegisterJodaTimeConversionHelpers()
       if (totalReactions > 2) {
         val r = new scala.util.Random
         val random1 = r.nextInt(totalReactions)
-        val random2 = r.nextInt(totalReactions)
-        val random3 = r.nextInt(totalReactions)
+        var random2 = r.nextInt(totalReactions)
+        while (random2 == random1) {
+          random2 = r.nextInt(totalReactions)
+        }
+        var random3 = r.nextInt(totalReactions)
+        while (random3 == random1 || random3 == random2) {
+          random3 = r.nextInt(totalReactions)
+        }
 
         val reaction1 = otherReactions(random1)
         val reaction2 = otherReactions(random2)
@@ -210,9 +216,7 @@ def gameFilter() = MongoDBObject("team" -> params("team"), "game_date" -> params
 
   get("/mlb/:date/:team/top") {
       val inningFilter = MongoDBObject("inning" -> params.getOrElse("inning", getCurrentInning(currentGame).toString))
-      val filter = gameFilter ++ inningFilter
-      val numParam = params.get("number").getOrElse("1").toInt
-      println(numParam)
+      val filter = gameFilter //++ inningFilter
       val topReactions = mongoColl.find(filter).sort(MongoDBObject("upvotes" -> -1)).limit(3).toList
       if (topReactions.length >2) {
         val json =
