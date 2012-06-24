@@ -38,6 +38,8 @@ RegisterJodaTimeConversionHelpers()
     override def toString(): String = { number + (if (isTop) "t" else "b") }
   }
 
+  def currentGame = new Game(new SimpleDateFormat("yyy-MM-dd").parse(params("date")), params("team"))
+
   def getCurrentInning(game: Game): RuckusInning = {
     RuckusInning(game.innings.all.length, !(game.innings.all.last.bottom.isDefined)) 
   }
@@ -68,7 +70,7 @@ RegisterJodaTimeConversionHelpers()
         builder += "user_id" -> theReaction.user_id
         builder += "game_date" -> params("date")
         builder += "team" -> params("team")
-        builder += "inning" -> getCurrentInning(new Game(new SimpleDateFormat("yyy-MM-dd").parse(params("date")), params("team"))).toString
+        builder += "inning" -> getCurrentInning(currentGame).toString
         builder += "reaction_type" -> theReaction.reaction_type
         builder += "content" -> theReaction.content
         builder += "upvotes" -> 0
@@ -193,15 +195,12 @@ def gameFilter() = MongoDBObject("team" -> params("team"), "game_date" -> params
                 ("content" -> (dbObj.getAs[String]("content") getOrElse("00000")))) 
       }
 
-
     val reactions = mongoColl.find(gameFilter).toList.map(getFullReactionJson(_))
-
     pretty(render(reactions))
   }
 
   get("/mlb/:date/:team/top") {
-    //todo: make this work
-      val inningFilter = MongoDBObject("inning" -> params.getOrElse("inning", halt(400)))
+      val inningFilter = MongoDBObject("inning" -> params.getOrElse("inning", getCurrentInning(currentGame).toString))
       val filter = gameFilter ++ inningFilter
       pretty(render(mongoColl.find(filter).sort(MongoDBObject("upvotes" -> -1)).limit(params.get("number").getOrElse("1").toInt).toList.map(getReactionJson(_))))
   }
